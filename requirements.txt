@@ -2,7 +2,7 @@ numpy
 scipy
 matplotlib
 open3d
-pybullet==2.7.9
+pybullet
 tqdm
 catkin_pkg
 trimesh

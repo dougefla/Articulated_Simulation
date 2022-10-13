@@ -59,7 +59,8 @@ if __name__ == '__main__':
     print('all_objs are: ', all_objs)
     object_nums = []
     object_joints = []
-    with open(base_path + '/' + dataset + '/statistics.txt', "a+") as f:
+    object_links = []
+    with open(base_path + '/' + dataset + '/statistics.txt', "w") as f:
         for obj_n in all_objs:
             f.write('{}\t'.format(obj_n))
         f.write('\n')
@@ -67,6 +68,7 @@ if __name__ == '__main__':
         object_joints_per = {}
         object_joints_per['revolute']  = 0
         object_joints_per['prismatic'] = 0
+        object_links_per = 0
         instances_per_obj = sorted(glob.glob(base_path  + dataset  + '/objects/' + obj_name + '/*'))
         obj_num =len(instances_per_obj)
         object_nums.append(obj_num)
@@ -133,6 +135,7 @@ if __name__ == '__main__':
                     joints_pos.append(vector_pos)
                 object_joints_per['revolute']  = max(object_joints_per['revolute'],rotation_joint)
                 object_joints_per['prismatic'] = max(object_joints_per['prismatic'],translation_joint)
+                object_links_per = max(object_links_per, rotation_joint+translation_joint+1)
                 # >>>>>>>>>>> start parsing urdf,
                 children = [
                     Element('link', name=links_name[i])
@@ -213,6 +216,7 @@ if __name__ == '__main__':
                     with open(save_dir + '/syn_p{}.urdf'.format(i), "w") as f:
                         f.write(xml_pretty_str)
         object_joints.append(object_joints_per)
+        object_links.append(object_links_per)
     with open(base_path + '/' + dataset + '/statistics.txt', "a+") as f:
         for obj_num in object_nums:
             f.write('{}\t'.format(obj_num))
@@ -220,4 +224,8 @@ if __name__ == '__main__':
     with open(base_path + '/' + dataset + '/statistics.txt', "a+") as f:
         for obj_j in object_joints:
             f.write('{}/{}\t'.format(obj_j['revolute'], obj_j['prismatic']))
+        f.write('\n')
+    with open(base_path + '/' + dataset + '/statistics.txt', "a+") as f:
+        for obj_l in object_links:
+            f.write('{}\t'.format(obj_l))
         f.write('\n')

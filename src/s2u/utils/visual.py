@@ -2,10 +2,10 @@ import os
 # os.environ["PYOPENGL_PLATFORM"] = "egl"
 import subprocess
 import trimesh
-try:
-    import pyrender
-except:
-    pass
+# try:
+#     import pyrender
+# except:
+#     pass
 import numpy as np
 from PIL import Image
 import matplotlib.pylab as plt

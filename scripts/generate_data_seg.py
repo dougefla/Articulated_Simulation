@@ -87,6 +87,8 @@ def sample_occ_binary(sim, mobile_links, num_point, method, var=0.005):
 
 
 def main(args, rank):
+    data_root = '/home/douge/Datasets/Motion_Dataset_v0'
+    urdf_root= os.path.join(data_root, 'urdf')
     
     np.random.seed()
     seed = np.random.randint(0, 1000) + rank
@@ -96,7 +98,7 @@ def main(args, rank):
                                            gui=args.sim_gui,
                                            global_scaling=args.global_scaling,
                                            dense_photo=args.dense_photo,
-                                           urdf_root="/home/douge/Datasets/Motion_Dataset_v0/urdf")
+                                           urdf_root=urdf_root)
     scenes_per_worker = args.num_scenes // args.num_proc
     pbar = tqdm(total=scenes_per_worker, disable=rank != 0)
     
@@ -247,6 +249,25 @@ def collect_observations(sim, args):
 
     return result
 
+def multi_func(args, object_set):
+
+    args.object_set = object_set
+    if 'syn' in args.object_set:
+        args.is_syn = True
+    else:
+        args.is_syn = False
+    
+    if not os.path.exists(args.root / "scenes"):
+        (args.root / "scenes").mkdir(parents=True)
+    if args.num_proc > 1:
+        #print(args.num_proc)
+        pool = mp.get_context("spawn").Pool(processes=args.num_proc)
+        for i in range(args.num_proc):
+            pool.apply_async(func=main, args=(args, i))
+        pool.close()
+        pool.join()
+    else:
+        main(args, 0)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -267,19 +288,18 @@ if __name__ == "__main__":
 
 
     args = parser.parse_args()
-    if 'syn' in args.object_set:
-        args.is_syn = True
-    else:
-        args.is_syn = False
-    
-    if not os.path.exists(args.root / "scenes"):
-        (args.root / "scenes").mkdir(parents=True)
-    if args.num_proc > 1:
-        #print(args.num_proc)
-        pool = mp.get_context("spawn").Pool(processes=args.num_proc)
-        for i in range(args.num_proc):
-            pool.apply_async(func=main, args=(args, i))
-        pool.close()
-        pool.join()
-    else:
-        main(args, 0)
+
+    # object_list = ["washing_machine", "laptop", "screwdriver", "seesaw", "wine_bottle", "valve", "rocking_chair", "windmill"]
+    object_list = ["seesaw", "wine_bottle", "valve", "rocking_chair", "windmill"]
+
+    for i in object_list:
+        multi_func(args,i)
+
+
+'''
+bucket  revolver	kettle	excavator	washing_machine	motorbike	fan	    lamp	laptop	swiss_army_knife	bike	scissors	cannon	screwdriver	seesaw	closestool	water_bottle	wine_bottle	folding_chair	tank	handcart	door	swivel_chair	lighter	cabinet	plane	carton	eyeglasses	refrigerator	watch	faucet	stapler	globe	car	    valve	skateboard	pen     swing	window	oven	rocking_chair	windmill	clock	helicopter	
+14      25          61      39          62              107         64      68      86      17                  63      26          102     70          23      64          56              17      	21          	30  	121	        92  	21          	37  	30  	143 	8   	43	        81          	6	    162	    33	    29	    101	    36	    79	        52      36      14  	42      19              78          58	    104	
+3/0	    3/1     	1/1 	9/0 	    1/0 	        3/0     	7/0	    5/0 	1/0 	10/1            	5/0	    2/0     	21/0	1/0	        1/0	    2/0     	1/2         	0/1     	2/0	            19/0    6/0     	6/1     1/1             2/1     6/9 	10/0	4/1	    2/0	        2/3	            3/0     4/0	    2/0	    2/0 	17/0    1/0 	8/0         0/2     4/0     2/2	    2/0     1/0             1/0	        3/0     2/0
+4	    4	        3	    10	        2	            4	        8	    6	    2	    11	                6	    3	        22	    2	        2	    3	        3	            2	        3	            20	    7	        7	    3	            3	    10	    11	    5	    3	        6	            4	    5	    3	    3	    18	    2	    9	        3	    5	    3	    3	    2	            2           4       3	
+
+'''

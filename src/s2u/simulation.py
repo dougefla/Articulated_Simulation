@@ -240,7 +240,7 @@ class ArticulatedObjectManipulationSim(object):
         
         mesh_pose_dict = get_mesh_pose_dict_from_world(self.world, False)
         # tsdf = TSDFVolume(self.size, 40)
-        high_res_tsdf = TSDFVolume(self.size, 500, color_type=o3d.pipelines.integration.TSDFVolumeColorType.RGB8) # 120
+        high_res_tsdf = TSDFVolume(size = self.size, resolution = 400)
 
         origin = Transform(Rotation.identity(), np.r_[self.size / 2, self.size / 2, self.size / 2])
         r = 1.2 * self.size
@@ -266,6 +266,19 @@ class ArticulatedObjectManipulationSim(object):
             N = N if N else n
             phi_list = 2.0 * np.pi * np.arange(n) / N
             extrinsics += [camera_on_sphere(origin, r, theta, phi) for phi in phi_list]
+        
+        depth_imgs = []
+        for extrinsic in extrinsics:
+            rgb_img, depth_img, (seg_uid, seg_link) = self.camera.render(extrinsic, flags=pybullet.ER_SEGMENTATION_MASK_OBJECT_AND_LINKINDEX)
+            label = np.stack([seg_uid, seg_link, np.zeros_like(seg_link)], axis=-1).astype(np.int8)
+            high_res_tsdf.integrate_rgb(depth_img, label, self.camera.intrinsic, extrinsic)
+            depth_imgs.append(depth_img)
+        tmp = high_res_tsdf._volume.extract_point_cloud()
+        pc = np.asarray(tmp.points)
+        colors = np.asarray(tmp.colors)
+        colors = np.clip(colors,0,1)
+        # draw_pointcloud(points=pc, colors=colors)
+        colors = (colors*255).astype(np.uint8)
 
         # timing = 0.0
         # depth_imgs = []
@@ -326,34 +339,38 @@ class ArticulatedObjectManipulationSim(object):
         # # draw_pointcloud(points=pc, colors=colors)
         # colors = (colors*255).astype(np.uint8)
 
-        timing = 0.0
-        label_dict = {}
-        depth_img_list = []
-        seg_uid_list = []
-        seg_link_list = []
-        label_list = []
+        # timing = 0.0
+        # label_dict = {}
+        # debug_label_dict = {}
+        # depth_img_list = []
+        # seg_uid_list = []
+        # seg_link_list = []
+        # label_list = []
+        # next_channel = 0
 
-        for extrinsic in extrinsics:
-            rgb_img, depth_img, (seg_uid, seg_link) = self.camera.render(extrinsic, flags=pybullet.ER_SEGMENTATION_MASK_OBJECT_AND_LINKINDEX)
-            depth_img_list.append(depth_img)
-            seg_uid_list.append(seg_uid)
-            seg_link_list.append(seg_link)
-            
-            if (seg_uid, seg_link)
+        # for extrinsic in extrinsics:
+        #     rgb_img, depth_img, (seg_uid, seg_link) = self.camera.render(extrinsic, flags=pybullet.ER_SEGMENTATION_MASK_OBJECT_AND_LINKINDEX)
+        #     depth_img_list.append(depth_img)
+        #     label = np.zeros(shape=(depth_img.shape[0], depth_img.shape[1], 3))
+
+        #     for i in range(label.shape[0]):
+        #         for j in range(label.shape[1]):
+        #             if (seg_uid[i,j], seg_link[i,j]) in label_dict.keys():
+        #                 label[i,j,label_dict[(seg_uid[i,j], seg_link[i,j])]] = 1
+        #                 debug_label_dict[(seg_uid[i,j], seg_link[i,j])]+=1
+        #             else:
+        #                 label_dict[(seg_uid[i,j], seg_link[i,j])] = next_channel
+        #                 debug_label_dict[(seg_uid[i,j], seg_link[i,j])] = 1
+        #                 next_channel+=1     
+        #     label_list.append(label)
         
-        
-        
-        
-        
-        print(1)
-        
-        integrate()
-        tmp = high_res_tsdf._volume.extract_point_cloud()
-        pc = np.asarray(tmp.points)
-        colors = np.asarray(tmp.colors)
-        colors = np.clip(colors,0,1)
-        # draw_pointcloud(points=pc, colors=colors)
-        colors = (colors*255).astype(np.uint8)
+        # integrate(depth_img_list, label_list)
+        # tmp = high_res_tsdf._volume.extract_point_cloud()
+        # pc = np.asarray(tmp.points)
+        # colors = np.asarray(tmp.colors)
+        # colors = np.clip(colors,0,1)
+        # # draw_pointcloud(points=pc, colors=colors)
+        # colors = (colors*255).astype(np.uint8)
 
         # a = colors[:,0]
         # b = colors[:,1]
