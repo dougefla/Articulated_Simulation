@@ -230,7 +230,14 @@ class ArticulatedObjectManipulationSim(object):
         pc = np.asarray(pc.points)
         
         return depth_imgs, pc, mesh_pose_dict
+    
+    def label_to_channel(self, label, channel_num = 4):
+        label_channel = np.zeros(shape=(label.shape[0], label.shape[1], channel_num))
+        for i in range(label_channel.shape[0]):
+            for j in range(label_channel.shape[1]):
+                label_channel[i][j][(label[i][j]+channel_num)%channel_num] = 1
 
+        return label_channel
 
     def acquire_segmented_pc(self, n, mobile_links, N=None):
         """Render synthetic depth images from n viewpoints and integrate into a TSDF.
@@ -270,12 +277,17 @@ class ArticulatedObjectManipulationSim(object):
         depth_imgs = []
         for extrinsic in extrinsics:
             rgb_img, depth_img, (seg_uid, seg_link) = self.camera.render(extrinsic, flags=pybullet.ER_SEGMENTATION_MASK_OBJECT_AND_LINKINDEX)
-            label = np.stack([seg_uid, seg_link, np.zeros_like(seg_link)], axis=-1).astype(np.int8)
-            high_res_tsdf.integrate_rgb(depth_img, label, self.camera.intrinsic, extrinsic)
+            label = self.label_to_channel(seg_link).astype(np.int8)
+
+            high_res_tsdf.integrate(depth_img, label, self.camera.intrinsic, extrinsic)
             depth_imgs.append(depth_img)
+
         tmp = high_res_tsdf._volume.extract_point_cloud()
-        pc = np.asarray(tmp.points)
-        colors = np.asarray(tmp.colors)
+        
+        # pc = np.asarray(tmp.point)
+        o3d.visualization.draw([tmp])
+        # draw_pointcloud(points=pc)
+        # colors = np.asarray(tmp.colors)
         colors = np.clip(colors,0,1)
         # draw_pointcloud(points=pc, colors=colors)
         colors = (colors*255).astype(np.uint8)

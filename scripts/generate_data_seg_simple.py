@@ -217,7 +217,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     # object_list = ["washing_machine", "laptop", "screwdriver", "seesaw", "wine_bottle", "valve", "rocking_chair", "windmill"]
-    object_list = ["seesaw", "wine_bottle", "valve", "rocking_chair", "windmill"]
+    object_list = ["laptop"]
 
     for i in object_list:
         multi_func(args,i)
